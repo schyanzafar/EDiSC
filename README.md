@@ -5,7 +5,7 @@ This repository contains the R scripts and data files used to produce the result
 
 The English data used to extract snippets for the target word "bank" needs to be purchased from https://www.english-corpora.org/coha/. (Note that the COHA data used in this paper was the version as at 3 June 2020.) The file _"COHA data extraction.R"_ may be used to extract the snippets once the data has been obtained. With permission from the data publisher, the extracted snippets are included in the file _"bank_snippets.words.RData"_, as well as our manual sense annotation for these snippets, ready to use.
 
-**Embeddings:** The files _"Embeddings - Greek data.R"_ and _"Embeddings - COHA.R"_ can be used to generate the GloVe embedding vectors for the ancient Greek and COHA data respectively. Alternatively, _"Greek data - word vectors"_ contains the embedding vectors for all the ancient Greek words in the corpus with minimum frequency 10, and _"Bank data - word vectors"_ contains the embedding vectors for all the context words (after data filtering) for "bank". Note that, due to licence restrictions, we are unable to upload the embedding vectors for all the words in the wider COHA corpus.
+**Embeddings:** The files _"Embeddings - Greek data.R"_ and _"Embeddings - COHA.R"_ can be used to generate the GloVe embedding vectors for the ancient Greek and COHA data respectively. Alternatively, _"word vectors"_ contains the embedding vectors for all context words (after data filtering) for the four target words ready to use.
 
 **Models and samplers:** R scripts used to fit the models using HMC and MALA (not Stan), and using NUTS and ADVI (Stan). 
 
