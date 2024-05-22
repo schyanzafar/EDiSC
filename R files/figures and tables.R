@@ -82,10 +82,10 @@ sense.probs.post.mean = apply(sense.probs.sim.normalised[(burn.in+1):num.samples
 # idx = which(snippet.lengths > 0)
 idx = which(snippet.lengths > 0 & snippets.info$disambiguation == 1) #of type collocates
 
-# #Index of snippets with either the riverbank or the institution bank true sense -- run the following 2 lines for bank only
-# sense.ids = levels(snippets.info$sense.id)
-# idx = which(snippets.info$sense.id %in% sense.ids[1:2])
-# names(idx) = idx #required for consistency with the Greek data
+#Index of snippets with either the riverbank or the institution bank true sense -- run the following 2 lines for bank only
+sense.ids = levels(snippets.info$sense.id)
+idx = which(snippets.info$sense.id %in% sense.ids[1:2])
+names(idx) = idx #required for consistency with the Greek data
 
 #Brier score
 (BS = measures::multiclass.Brier(t(sense.probs.post.mean[,idx]), as.numeric(factor(snippets.info$sense.id[idx]))))
@@ -138,7 +138,7 @@ desired.labelling = list(c(1), c(2,3), c())
 sense.probs.sim.normalised = sapply(1:num.snippets, function(d){
   sense.probs.sim[,,d]/rowSums(sense.probs.sim[,,d])}, simplify = "array")
 
-#Combine senses into the 3 true senses
+#Combine senses into the 2 true senses
 sense.probs.sim.normalised.2 = sense.probs.sim.normalised[,1:2,]
 sense.probs.sim.normalised.2[,1,] = apply(sense.probs.sim.normalised[,desired.labelling[[1]],,drop=FALSE], 3, rowSums)
 sense.probs.sim.normalised.2[,2,] = apply(sense.probs.sim.normalised[,desired.labelling[[2]],,drop=FALSE], 3, rowSums)
@@ -886,6 +886,95 @@ legend(x=0.05,y=0.01, legend = c(rownames(phi.narrative), expression(paste("DiSC
 
 
 #############################################################################
+# Bayes factors EDiSC vs DiSC phi|W against phi|z 95% HPD ----------------- #
+#############################################################################
+
+options(digits = 2)
+
+#Compute phi.tilde.sim.normalised for DiSC and EDiSC as above
+num.true.senses = 3
+# desired.labelling = list(c(1), c(2), c())
+
+phi.tilde.sim.normalised = phi.tilde.sim[,1:num.true.senses,,,drop=FALSE]
+for (k in 1:num.true.senses) {
+  phi.tilde.sim.normalised[,k,,] = apply(phi.tilde.sim[,desired.labelling[[k]],,,drop=FALSE], c(3,4), rowSums)
+}
+phi.tilde.sim.normalised = sapply(1:num.periods, function(t) {sapply(1:num.genres, function(g) {
+  phi.tilde.sim.normalised[,,g,t] / rowSums(phi.tilde.sim[,,g,t]) }, simplify = "array") }, simplify = "array")
+
+#Store values for DiSC 
+phi.tilde.given.W.sim.DiSC = phi.tilde.sim.normalised
+burn.in.DiSC = burn.in
+num.samples.DiSC = num.samples
+
+#Store values for EDiSC
+phi.tilde.given.W.sim.EDiSC = phi.tilde.sim.normalised
+burn.in.EDiSC = burn.in
+num.samples.EDiSC = num.samples
+
+#Load phi.tilde.sim from the phi|z run, and get the HPD intervals
+conf.level = 0.95
+phi.tilde.given.z.conf = array(dim = c(num.true.senses, 2, num.genres, num.periods),
+                               dimnames = list(Sense = 1:num.true.senses, Limit = c("lower","upper"),
+                                               Genre = 1:num.genres, Time = 1:num.periods))
+for (t in 1:num.periods){
+  for (g in 1:num.genres){
+    phi.tilde.given.z.conf[,,g,t] = HPDinterval( as.mcmc(phi.tilde.sim[,,g,t]), conf.level ) 
+  }#for g
+}#for t
+
+#Simulate prior stationary distribution for phi.g.t
+alpha.phi = 0.9
+kappa.phi = 0.25
+prior.sd = sqrt(kappa.phi/(1-alpha.phi^2))
+
+num.prior.samples = 10000
+phi.prior.sim = array(dim = c(num.prior.samples, num.true.senses), 
+                      dimnames = list(Sample = 1:num.prior.samples, Sense = 1:num.true.senses))
+set.seed(500)
+phi.prior.sim[] = rnorm(num.prior.samples * num.true.senses, 0, prior.sd)
+
+#Softmax transform to get prior distribution for phi.tilde.g.t
+phi.tilde.prior.sim = exp(phi.prior.sim) / rowSums(exp(phi.prior.sim))
+
+#Function to compute empirical probability of variable being within defined limits
+get.emp.prob = function(distr, limits) {
+  sum( apply( (t(distr) > limits[,1]) * (t(distr) <= limits[,2]) , 2, prod) ) / nrow(distr)
+}
+
+#Prior probabilities for phi.tilde.g.t belonging to 95% HPD for phi.tilde|z for all senses
+prior.probs = array(dim = c(num.genres, num.periods), 
+                    dimnames = list(Genre = 1:num.genres, Time = 1:num.periods))
+for (g in 1:num.genres) {
+  for (t in 1:num.periods) {
+    prior.probs[g,t] = get.emp.prob(phi.tilde.prior.sim, phi.tilde.given.z.conf[,,g,t])
+  }
+}
+
+#Posterior probabilities for phi.tilde.g.t belonging to 95% HPD for phi.tilde|z for all senses
+post.probs.DiSC = post.probs.EDiSC = array(dim = c(num.genres, num.periods), 
+                                           dimnames = list(Genre = 1:num.genres, Time = 1:num.periods))
+for (g in 1:num.genres) {
+  for (t in 1:num.periods) {
+    post.probs.DiSC[g,t] = get.emp.prob(phi.tilde.given.W.sim.DiSC[(burn.in.DiSC+1):num.samples.DiSC,,g,t], phi.tilde.given.z.conf[,,g,t])
+    post.probs.EDiSC[g,t] = get.emp.prob(phi.tilde.given.W.sim.EDiSC[(burn.in.EDiSC+1):num.samples.EDiSC,,g,t], phi.tilde.given.z.conf[,,g,t])
+  }
+}
+
+#Bayes factors BF01
+post.probs.DiSC / prior.probs
+post.probs.EDiSC / prior.probs
+
+#Bayes factors BF01 on log10 scale
+log10(post.probs.DiSC) - log10(prior.probs)
+log10(post.probs.EDiSC) - log10(prior.probs)
+
+#Proportion of times EDiSC beats DiSC
+mean(post.probs.EDiSC >= post.probs.DiSC)
+
+
+
+#############################################################################
 # Metastable states plot for paper ---------------------------------------- #
 #############################################################################
 
@@ -968,4 +1057,3 @@ psi.tilde.ess = array(c(
 
 median(psi.tilde.ess)
 quantile(psi.tilde.ess, probs = c(0.25,0.75))
-
