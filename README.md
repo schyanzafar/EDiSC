@@ -9,7 +9,7 @@ The English data used to extract snippets for the target word "bank" needs to be
 
 **Models and samplers:** R scripts used to fit the models using HMC and MALA (not Stan), and using NUTS and ADVI (Stan). 
 
-**Scalability analysis:** R scripts used to simulate the data and perform the runs used in Figure 9 in the paper.
+**Scalability analysis:** R scripts used to simulate the data and perform the runs used in Figure 4 in the paper.
 
 **figures and tables.R:** Contains the code used to produce all the figures, tables and results reported in the paper.
 
