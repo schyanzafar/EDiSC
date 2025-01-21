@@ -1,5 +1,5 @@
 # EDiSC
-This repository contains the R scripts and data files used to produce the results reported in Zafar and Nicholls (2023) "An Embedded Diachronic Sense Change Model with a Case Study from Ancient Greek".
+This repository contains the R scripts and data files used to produce the results reported in [Zafar and Nicholls (2024)](https://doi.org/10.1016/j.csda.2024.108011): "An Embedded Diachronic Sense Change Model with a Case Study from Ancient Greek".
 
 **Data extraction and snippets:** The ancient Greek data used to extract snippets for the target words "kosmos", "mus" and "harmonia" is freely available online. Links included in the file _"Greek data extraction.R"_ point to the data sources, and the code may be used to extract the snippets. Alternatively, the files _"kosmos_snippets.RData"_, _"mus_snippets.RData"_ and _"harmonia_snippets.RData"_ contain the extracted snippets ready to use. 
 
